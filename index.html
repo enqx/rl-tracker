@@ -430,9 +430,9 @@
         // Start-Spieler (wird nacheinander geladen)
         let playersToFetch = [
             { platform: 'epic', username: 'pmul' },
-            { platform: 'epic', username: 'Vatira' },
-            { platform: 'steam', username: 'SquishyMuffinz' },
-            { platform: 'psn', username: 'ApparentlyJack' }
+            { platform: 'epic', username: 'Cǝdrאc Ψ' },
+            { platform: 'epic', username: 'the_metatron' },
+            { platform: 'epic', username: 'i love goodgirls' },
         ];
 
         let fetchedPlayersData = [];
@@ -489,45 +489,78 @@
             };
         }
 
-        // Daten abrufen (mit Mock-Generator falls API geblockt wird)
+        // 1. Trage hier deine Cloudflare Worker URL ein (ohne Slash am Ende):
+        const WORKER_URL = "https://rl-proxy.paul-schuele.workers.dev";
+
+        // Icons für die Rang-Farben
+        function getRankColorClass(tierName = "") {
+            const t = tierName.toLowerCase();
+            if (t.includes("supersonic") || t.includes("ssl")) return "color-ssl";
+            if (t.includes("grand champion")) return "color-gc";
+            if (t.includes("champion")) return "color-champ";
+            if (t.includes("diamond")) return "color-diamond";
+            if (t.includes("platinum")) return "color-plat";
+            if (t.includes("gold")) return "color-gold";
+            if (t.includes("silver")) return "color-silver";
+            return "color-bronze";
+        }
+
         async function fetchPlayerData(platform, username) {
-            const apiUrl = `https://rocketleague.tracker.network/rocket-league/profile/${platform}/${username}`;
-
             try {
-                // Echter Fetch Versuch
-                const response = await fetch(apiUrl, {
-                    method: 'GET',
-                    headers: { 'Accept': 'application/json' }
-                });
+                const response = await fetch(`${WORKER_URL}/?platform=${platform}&user=${encodeURIComponent(username)}`);
 
-                if (!response.ok) throw new Error("API Limit oder CORS-Fehler");
+                if (!response.ok) {
+                    throw new Error(`Spieler ${username} nicht gefunden oder API-Limit erreicht`);
+                }
 
-                const data = await response.json();
+                const json = await response.json();
+                const segments = json.data?.segments || [];
+
+                // Hilfsfunktion zum Finden der jeweiligen Playlist in der TRN-Antwort
+                function parseMode(playlistName) {
+                    const seg = segments.find(s =>
+                        s.type === 'playlist' &&
+                        s.metadata?.name?.toLowerCase().includes(playlistName.toLowerCase())
+                    );
+
+                    if (!seg || !seg.stats?.rating) {
+                        return { text: "Unranked", mmr: 0, color: "color-silver" };
+                    }
+
+                    const tier = seg.stats.tier?.metadata?.name || "Unranked";
+                    const division = seg.stats.division?.metadata?.name || "";
+                    const mmr = Math.round(seg.stats.rating.value || 0);
+
+                    return {
+                        text: `${tier} ${division}`.trim(),
+                        mmr: mmr,
+                        color: getRankColorClass(tier)
+                    };
+                }
+
+                const solo = parseMode("Ranked Duel 1v1");
+                const duo = parseMode("Ranked Doubles 2v2");
+                const trio = parseMode("Ranked Standard 3v3");
+
                 return {
                     username: username,
                     platform: platform,
                     modes: {
-                        solo: data.solo_mmr || 0,
-                        duo: data.duo_mmr || 0,
-                        trio: data.trio_mmr || 0
+                        solo: solo,
+                        duo: duo,
+                        trio: trio
                     }
                 };
 
             } catch (error) {
-                // FALLBACK: Generiert deterministische MMRs für 1v1, 2v2 und 3v3
-                let seed = 0;
-                for (let i = 0; i < username.length; i++) seed += username.charCodeAt(i);
-
-                // Realistische Schwankungen zwischen den Modi
-                const baseMmr = 900 + (seed * 43) % 800; // Zwischen 900 und 1700
-
+                console.error(error);
                 return {
                     username: username,
                     platform: platform,
                     modes: {
-                        solo: Math.max(150, baseMmr - 150 + ((seed * 7) % 200)), // Solo oft etwas niedriger
-                        duo: baseMmr + ((seed * 13) % 250),                     // Duo oft am höchsten
-                        trio: baseMmr - 50 + ((seed * 19) % 200)
+                        solo: { text: "Keine Daten", mmr: 0, color: "color-silver" },
+                        duo: { text: "Keine Daten", mmr: 0, color: "color-silver" },
+                        trio: { text: "Keine Daten", mmr: 0, color: "color-silver" }
                     }
                 };
             }
@@ -586,19 +619,20 @@
                         <i class="${pIcon} platform-icon" title="${player.platform}"></i>
                     </div>
                     
+                    // Beispiel im innerHTML deiner player-row:
                     <div class="mode-info" data-mode="1v1 (Solo)">
-                        <div class="rank-text ${soloRank.color}">${soloRank.text}</div>
-                        <div class="mmr-text">MMR: <span>${player.modes.solo}</span></div>
+                        <div class="rank-text ${player.modes.solo.color}">${player.modes.solo.text}</div>
+                        <div class="mmr-text">MMR: <span>${player.modes.solo.mmr}</span></div>
                     </div>
-                    
+
                     <div class="mode-info" data-mode="2v2 (Duo)">
-                        <div class="rank-text ${duoRank.color}">${duoRank.text}</div>
-                        <div class="mmr-text">MMR: <span>${player.modes.duo}</span></div>
+                        <div class="rank-text ${player.modes.duo.color}">${player.modes.duo.text}</div>
+                        <div class="mmr-text">MMR: <span>${player.modes.duo.mmr}</span></div>
                     </div>
-                    
+
                     <div class="mode-info" data-mode="3v3 (Trio)">
-                        <div class="rank-text ${trioRank.color}">${trioRank.text}</div>
-                        <div class="mmr-text">MMR: <span>${player.modes.trio}</span></div>
+                        <div class="rank-text ${player.modes.trio.color}">${player.modes.trio.text}</div>
+                        <div class="mmr-text">MMR: <span>${player.modes.trio.mmr}</span></div>
                     </div>
                 `;
 
