@@ -509,14 +509,27 @@
             try {
                 const response = await fetch(`${WORKER_URL}/?platform=${platform}&user=${encodeURIComponent(username)}`);
 
+                // 404 sauber abfangen (Spieler existiert nicht bei TRN)
+                if (response.status === 404) {
+                    return {
+                        username: username,
+                        platform: platform,
+                        notFound: true,
+                        modes: {
+                            solo: { text: "Nicht gefunden", mmr: 0, color: "color-silver" },
+                            duo: { text: "Nicht gefunden", mmr: 0, color: "color-silver" },
+                            trio: { text: "Nicht gefunden", mmr: 0, color: "color-silver" }
+                        }
+                    };
+                }
+
                 if (!response.ok) {
-                    throw new Error(`Spieler ${username} nicht gefunden oder API-Limit erreicht`);
+                    throw new Error(`Fehler: HTTP ${response.status}`);
                 }
 
                 const json = await response.json();
                 const segments = json.data?.segments || [];
 
-                // Hilfsfunktion zum Finden der jeweiligen Playlist in der TRN-Antwort
                 function parseMode(playlistName) {
                     const seg = segments.find(s =>
                         s.type === 'playlist' &&
@@ -538,29 +551,27 @@
                     };
                 }
 
-                const solo = parseMode("Ranked Duel 1v1");
-                const duo = parseMode("Ranked Doubles 2v2");
-                const trio = parseMode("Ranked Standard 3v3");
-
                 return {
                     username: username,
                     platform: platform,
+                    notFound: false,
                     modes: {
-                        solo: solo,
-                        duo: duo,
-                        trio: trio
+                        solo: parseMode("Ranked Duel 1v1"),
+                        duo: parseMode("Ranked Doubles 2v2"),
+                        trio: parseMode("Ranked Standard 3v3")
                     }
                 };
 
             } catch (error) {
-                console.error(error);
+                console.warn(`Fehler beim Abruf von ${username}:`, error);
                 return {
                     username: username,
                     platform: platform,
+                    notFound: true,
                     modes: {
-                        solo: { text: "Keine Daten", mmr: 0, color: "color-silver" },
-                        duo: { text: "Keine Daten", mmr: 0, color: "color-silver" },
-                        trio: { text: "Keine Daten", mmr: 0, color: "color-silver" }
+                        solo: { text: "Fehler", mmr: 0, color: "color-silver" },
+                        duo: { text: "Fehler", mmr: 0, color: "color-silver" },
+                        trio: { text: "Fehler", mmr: 0, color: "color-silver" }
                     }
                 };
             }
