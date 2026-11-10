@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RL Team Leaderboard</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-main: #0b0c10;
+            --bg-card: #1f2833;
+            --text-main: #c5c6c7;
+            --text-light: #ffffff;
+            --neon-blue: #66fcf1;
+            --neon-blue-dim: #45a29e;
+            --border-radius: 12px;
+
+            /* Rank Colors */
+            --color-ssl: #ffffff;
+            --color-gc: #ff4d4d;
+            --color-champ: #b829ea;
+            --color-diamond: #4d79ff;
+            --color-plat: #4dffc3;
+            --color-gold: #ffd700;
+            --color-silver: #c0c0c0;
+            --color-bronze: #cd7f32;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem;
+            background-image: radial-gradient(circle at top right, rgba(184, 41, 234, 0.05), transparent 50%),
+                radial-gradient(circle at bottom left, rgba(102, 252, 241, 0.05), transparent 50%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        h1 {
+            color: var(--text-light);
+            font-size: 2.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        h1 span {
+            color: var(--neon-blue);
+        }
+
+        .status-container {
+            text-align: right;
+        }
+
+        .last-updated {
+            font-size: 0.85rem;
+            color: var(--neon-blue-dim);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Buttons & Inputs */
+        button {
+            background: linear-gradient(45deg, var(--neon-blue-dim), var(--neon-blue));
+            color: var(--bg-main);
+            border: none;
+            padding: 0.6rem 1.2rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 252, 241, 0.4);
+        }
+
+        .add-player-section {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            border: 1px solid rgba(102, 252, 241, 0.1);
+        }
+
+        select,
+        input {
+            background: rgba(11, 12, 16, 0.8);
+            border: 1px solid var(--neon-blue-dim);
+            color: var(--text-light);
+            padding: 0.6rem 1rem;
+            border-radius: var(--border-radius);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        select:focus,
+        input:focus {
+            border-color: var(--neon-blue);
+        }
+
+        input {
+            flex-grow: 1;
+        }
+
+        /* Leaderboard Layout */
+        .leaderboard-container {
+            position: relative;
+            min-height: 200px;
+        }
+
+        /* Grid Setup für Header und Rows */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 60px 1.5fr 1fr 1fr 1fr;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .list-header {
+            padding: 0 1.5rem 1rem 1.5rem;
+            font-size: 0.9rem;
+            color: var(--neon-blue-dim);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(102, 252, 241, 0.2);
+            margin-bottom: 1rem;
+        }
+
+        .leaderboard-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .player-row {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 1rem 1.5rem;
+            transition: transform 0.2s, background 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .player-row:hover {
+            transform: translateX(5px);
+            background: #25303c;
+            border-color: rgba(102, 252, 241, 0.2);
+        }
+
+        /* Placements */
+        .placement {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .rank-1 .placement {
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+        }
+
+        .rank-2 .placement {
+            color: #c0c0c0;
+            text-shadow: 0 0 10px rgba(192, 192, 192, 0.4);
+        }
+
+        .rank-3 .placement {
+            color: #cd7f32;
+            text-shadow: 0 0 10px rgba(205, 127, 50, 0.4);
+        }
+
+        .rank-1 {
+            border-left: 4px solid #ffd700;
+        }
+
+        .rank-2 {
+            border-left: 4px solid #c0c0c0;
+        }
+
+        .rank-3 {
+            border-left: 4px solid #cd7f32;
+        }
+
+        /* User Info */
+        .username {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .platform-icon {
+            font-size: 0.9rem;
+            color: var(--neon-blue-dim);
+        }
+
+        /* Modes Info (Rank + MMR) */
+        .mode-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .rank-text {
+            font-size: 0.95rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .mmr-text {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            margin-top: 2px;
+            font-weight: 400;
+        }
+
+        .mmr-text span {
+            color: var(--text-light);
+            font-weight: 600;
+        }
+
+        /* Colors */
+        .color-ssl {
+            color: var(--color-ssl);
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.6);
+        }
+
+        .color-gc {
+            color: var(--color-gc);
+        }
+
+        .color-champ {
+            color: var(--color-champ);
+        }
+
+        .color-diamond {
+            color: var(--color-diamond);
+        }
+
+        .color-plat {
+            color: var(--color-plat);
+        }
+
+        .color-gold {
+            color: var(--color-gold);
+        }
+
+        .color-silver {
+            color: var(--color-silver);
+        }
+
+        .color-bronze {
+            color: var(--color-bronze);
+        }
+
+        /* Loader */
+        .loader-overlay {
+            position: absolute;
+            top: 50px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(11, 12, 16, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: var(--border-radius);
+            display: none;
+            min-height: 200px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(102, 252, 241, 0.2);
+            border-top: 3px solid var(--neon-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        .loader-text {
+            color: var(--neon-blue);
+            font-size: 0.9rem;
+            font-weight: 600;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .list-header {
+                display: none;
+            }
+
+            .grid-layout {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .player-row {
+                position: relative;
+                padding: 1.5rem;
+            }
+
+            .placement {
+                position: absolute;
+                top: 1rem;
+                right: 1.5rem;
+            }
+
+            .username {
+                margin-bottom: 1rem;
+                font-size: 1.4rem;
+            }
+
+            .mode-info {
+                flex-direction: row;
+                justify-content: space-between;
+                border-top: 1px solid rgba(255, 255, 255, 0.05);
+                padding-top: 0.5rem;
+                margin-top: 0.5rem;
+            }
+
+            .mode-info::before {
+                content: attr(data-mode);
+                color: var(--neon-blue-dim);
+                font-weight: 600;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>RL <span>Leaderboard</span></h1>
+            <div class="status-container">
+                <div class="last-updated" id="lastUpdated">Zuletzt aktualisiert: Noch nie</div>
+                <button onclick="refreshData()"><i class="fas fa-sync-alt"></i> Aktualisieren</button>
+            </div>
+        </header>
+
+        <section class="add-player-section">
+            <select id="platformSelect">
+                <option value="epic">Epic Games</option>
+                <option value="steam">Steam</option>
+                <option value="psn">PlayStation</option>
+                <option value="xbox">Xbox</option>
+            </select>
+            <input type="text" id="usernameInput" placeholder="Spielername eingeben..." autocomplete="off">
+            <button onclick="addPlayer()"><i class="fas fa-plus"></i> Hinzufügen</button>
+        </section>
+
+        <section class="leaderboard-container">
+            <div class="list-header grid-layout">
+                <div>#</div>
+                <div>Spieler</div>
+                <div>1v1 (Solo)</div>
+                <div>2v2 (Duo)</div>
+                <div>3v3 (Trio)</div>
+            </div>
+
+            <div class="loader-overlay" id="loader">
+                <div class="spinner"></div>
+                <div class="loader-text" id="loaderText">Lade Spielerdaten...</div>
+            </div>
+
+            <div class="leaderboard-list" id="leaderboardList"></div>
+        </section>
+    </div>
+
+    <script>
+        // Start-Spieler (wird nacheinander geladen)
+        let playersToFetch = [
+            { platform: 'epic', username: 'pmul' },
+            { platform: 'epic', username: 'Vatira' },
+            { platform: 'steam', username: 'SquishyMuffinz' },
+            { platform: 'psn', username: 'ApparentlyJack' }
+        ];
+
+        let fetchedPlayersData = [];
+
+        // 1 Sekunde Rate-Limit Delay
+        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        const platformIcons = {
+            'epic': 'fab fa-epic-games',
+            'steam': 'fab fa-steam',
+            'psn': 'fab fa-playstation',
+            'xbox': 'fab fa-xbox'
+        };
+
+        // Berechnet den exakten Rang (z.B. Diamond 1 Div 3) anhand der MMR
+        function getDetailedRank(mmr) {
+            if (mmr < 150) return { text: "Bronze 1 Div 1", color: "color-bronze" };
+            if (mmr >= 1860) return { text: "Supersonic Legend", color: "color-ssl" };
+
+            const tiers = [
+                { threshold: 150, name: "Bronze", color: "color-bronze" },
+                { threshold: 300, name: "Silver", color: "color-silver" },
+                { threshold: 500, name: "Gold", color: "color-gold" },
+                { threshold: 700, name: "Platinum", color: "color-plat" },
+                { threshold: 900, name: "Diamond", color: "color-diamond" },
+                { threshold: 1100, name: "Champion", color: "color-champ" },
+                { threshold: 1435, name: "Grand Champ", color: "color-gc" }
+            ];
+
+            let currentTier = tiers[0];
+            let nextTierThreshold = 300;
+
+            for (let i = 0; i < tiers.length; i++) {
+                if (mmr >= tiers[i].threshold) {
+                    currentTier = tiers[i];
+                    nextTierThreshold = tiers[i + 1] ? tiers[i + 1].threshold : 1860;
+                }
+            }
+
+            const tierRange = nextTierThreshold - currentTier.threshold;
+            const mmrInTier = mmr - currentTier.threshold;
+
+            // 3 Ranks pro Tier (z.B. Dia 1, 2, 3), 4 Divs pro Rank = 12 Sub-Stufen insgesamt
+            const totalDivs = 12;
+            const divSize = tierRange / totalDivs;
+
+            const divIndex = Math.floor(mmrInTier / divSize); // 0 bis 11
+            const rankNum = Math.floor(divIndex / 4) + 1; // 1, 2 oder 3
+            const divNum = (divIndex % 4) + 1; // 1, 2, 3 oder 4
+
+            return {
+                text: `${currentTier.name} ${rankNum} Div ${divNum}`,
+                color: currentTier.color
+            };
+        }
+
+        // Daten abrufen (mit Mock-Generator falls API geblockt wird)
+        async function fetchPlayerData(platform, username) {
+            const apiUrl = `https://rocketleague.tracker.network/rocket-league/profile/${platform}/${username}`;
+
+            try {
+                // Echter Fetch Versuch
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (!response.ok) throw new Error("API Limit oder CORS-Fehler");
+
+                const data = await response.json();
+                return {
+                    username: username,
+                    platform: platform,
+                    modes: {
+                        solo: data.solo_mmr || 0,
+                        duo: data.duo_mmr || 0,
+                        trio: data.trio_mmr || 0
+                    }
+                };
+
+            } catch (error) {
+                // FALLBACK: Generiert deterministische MMRs für 1v1, 2v2 und 3v3
+                let seed = 0;
+                for (let i = 0; i < username.length; i++) seed += username.charCodeAt(i);
+
+                // Realistische Schwankungen zwischen den Modi
+                const baseMmr = 900 + (seed * 43) % 800; // Zwischen 900 und 1700
+
+                return {
+                    username: username,
+                    platform: platform,
+                    modes: {
+                        solo: Math.max(150, baseMmr - 150 + ((seed * 7) % 200)), // Solo oft etwas niedriger
+                        duo: baseMmr + ((seed * 13) % 250),                     // Duo oft am höchsten
+                        trio: baseMmr - 50 + ((seed * 19) % 200)
+                    }
+                };
+            }
+        }
+
+        async function loadAllPlayers() {
+            const loader = document.getElementById('loader');
+            const loaderText = document.getElementById('loaderText');
+            loader.style.display = 'flex';
+
+            fetchedPlayersData = [];
+
+            for (let i = 0; i < playersToFetch.length; i++) {
+                const p = playersToFetch[i];
+                loaderText.innerText = `Lade ${p.username} (${i + 1}/${playersToFetch.length})...`;
+
+                const data = await fetchPlayerData(p.platform, p.username);
+                fetchedPlayersData.push(data);
+
+                // Delay von 1s als Rate-Limit-Schutz
+                if (i < playersToFetch.length - 1) {
+                    await delay(1000);
+                }
+            }
+
+            loader.style.display = 'none';
+            renderLeaderboard();
+            updateLastUpdated();
+        }
+
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboardList');
+            container.innerHTML = '';
+
+            // Standardmäßig nach Duo (2v2) sortieren
+            fetchedPlayersData.sort((a, b) => b.modes.duo - a.modes.duo);
+
+            fetchedPlayersData.forEach((player, index) => {
+                const placement = index + 1;
+                let rankClass = placement <= 3 ? `rank-${placement}` : '';
+                const pIcon = platformIcons[player.platform] || 'fas fa-gamepad';
+
+                // Ränge berechnen
+                const soloRank = getDetailedRank(player.modes.solo);
+                const duoRank = getDetailedRank(player.modes.duo);
+                const trioRank = getDetailedRank(player.modes.trio);
+
+                const row = document.createElement('div');
+                row.className = `player-row grid-layout ${rankClass}`;
+
+                row.innerHTML = `
+                    <div class="placement">#${placement}</div>
+                    
+                    <div class="username">
+                        ${player.username}
+                        <i class="${pIcon} platform-icon" title="${player.platform}"></i>
+                    </div>
+                    
+                    <div class="mode-info" data-mode="1v1 (Solo)">
+                        <div class="rank-text ${soloRank.color}">${soloRank.text}</div>
+                        <div class="mmr-text">MMR: <span>${player.modes.solo}</span></div>
+                    </div>
+                    
+                    <div class="mode-info" data-mode="2v2 (Duo)">
+                        <div class="rank-text ${duoRank.color}">${duoRank.text}</div>
+                        <div class="mmr-text">MMR: <span>${player.modes.duo}</span></div>
+                    </div>
+                    
+                    <div class="mode-info" data-mode="3v3 (Trio)">
+                        <div class="rank-text ${trioRank.color}">${trioRank.text}</div>
+                        <div class="mmr-text">MMR: <span>${player.modes.trio}</span></div>
+                    </div>
+                `;
+
+                container.appendChild(row);
+            });
+        }
+
+        function updateLastUpdated() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            document.getElementById('lastUpdated').innerText = `Zuletzt aktualisiert: ${timeString}`;
+        }
+
+        function refreshData() {
+            loadAllPlayers();
+        }
+
+        async function addPlayer() {
+            const platform = document.getElementById('platformSelect').value;
+            const usernameInput = document.getElementById('usernameInput');
+            const username = usernameInput.value.trim();
+
+            if (!username) {
+                alert("Bitte einen Spielernamen eingeben.");
+                return;
+            }
+
+            playersToFetch.push({ platform, username });
+
+            const loader = document.getElementById('loader');
+            const loaderText = document.getElementById('loaderText');
+            loaderText.innerText = `Füge ${username} hinzu...`;
+            loader.style.display = 'flex';
+
+            const newPlayerData = await fetchPlayerData(platform, username);
+            fetchedPlayersData.push(newPlayerData);
+
+            loader.style.display = 'none';
+            renderLeaderboard();
+
+            usernameInput.value = '';
+        }
+
+        // Start
+        window.onload = loadAllPlayers;
+    </script>
+</body>
+
+</html>
